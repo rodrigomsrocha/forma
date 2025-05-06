@@ -3,6 +3,15 @@
 import { Button } from "@workspace/ui/components/button";
 import { Calendar } from "@workspace/ui/components/calendar";
 import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+  TableFooter,
+} from "@workspace/ui/components/table";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -35,7 +44,14 @@ import {
 import { Switch } from "@workspace/ui/components/switch";
 import { cn } from "@workspace/ui/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -43,6 +59,31 @@ export function QuoteInvoiceForm() {
   const form = useForm();
   const [step, setStep] = useState(0);
   const totalSteps = 4;
+
+  const [items, setItems] = useState([
+    {
+      description: "",
+      quantity: 0,
+      unity_value: 0,
+    },
+  ]);
+
+  const addItems = () => {
+    setItems((prev) => [
+      ...prev,
+      {
+        description: "",
+        quantity: 0,
+        unity_value: 0,
+      },
+    ]);
+  };
+
+  const removeItems = (description: string) => {
+    setItems((prev) => {
+      return prev.filter((item) => item.description !== description);
+    });
+  };
 
   const previousFormStep = () => {
     if (step > 0) {
@@ -177,7 +218,10 @@ export function QuoteInvoiceForm() {
                           <FormLabel>Document Type</FormLabel>
                           <Select onValueChange={field.onChange} value="quote">
                             <FormControl>
-                              <SelectTrigger disabled className="w-full max-w-[200px]">
+                              <SelectTrigger
+                                disabled
+                                className="w-full max-w-[200px]"
+                              >
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
@@ -285,10 +329,101 @@ export function QuoteInvoiceForm() {
         </div>
       )}
       {step === 1 && (
-        <div>
-          <h1>Items/Service</h1>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-bold">Items/Service</h1>
+          <p className="text-sm text-muted-foreground">
+            Add the items or services you want to include in this invoice/quote.
+          </p>
+          <Button onClick={addItems} className="mb-4">
+            <Plus />
+            Add Item
+          </Button>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-2/5">Description</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Unity Value</TableHead>
+                      <TableHead className="w-[200px]">Total</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => (
+                      <TableRow key={item.description}>
+                        <TableCell>
+                          <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input placeholder="Description" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <FormField
+                            control={form.control}
+                            name="quantity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    placeholder="0"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <FormField
+                            control={form.control}
+                            name="unity_value"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input placeholder="0.00" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </TableCell>
+                        <TableCell>R$ 1000,00</TableCell>
+                        <TableCell className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              removeItems(item.description);
+                            }}
+                            variant="secondary"
+                            size="icon"
+                          >
+                            <Trash2 />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={3}>Total</TableCell>
+                      <TableCell className="w-[200px]">R$ 1000,00</TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
               <div className="col-span-full place-self-end gap-2 flex items-center">
                 <Button onClick={previousFormStep} type="button">
                   <ChevronLeft />
