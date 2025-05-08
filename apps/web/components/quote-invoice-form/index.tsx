@@ -2,6 +2,7 @@
 
 import { Button } from "@workspace/ui/components/button";
 import { Calendar } from "@workspace/ui/components/calendar";
+import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   Table,
   TableHeader,
@@ -55,6 +56,7 @@ import {
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { formatCurrency } from "@/utils/format-currnency";
+import { Textarea } from "@workspace/ui/components/textarea";
 
 type FormValues = {
   // Step 0 fields
@@ -75,12 +77,35 @@ type FormValues = {
     unitValue: number;
     total: number;
   }[];
+
+  // Step 2 fields
+  payment_methods: string[];
+  deposit: boolean;
+  deposit_value: number;
+  bank_details: string;
+  payment_terms: string[];
 };
+
+const payments = [
+  {
+    id: "stripe",
+    label: "Stripe",
+  },
+  {
+    id: "bank_transfer",
+    label: "Bank Transfer",
+  },
+  {
+    id: "paypal",
+    label: "PayPal",
+  },
+] as const;
 
 export function QuoteInvoiceForm() {
   const form = useForm<FormValues>({
     defaultValues: {
       items: [{ description: "", quantity: 1, unitValue: 0, total: 0 }],
+      payment_methods: [],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -90,13 +115,6 @@ export function QuoteInvoiceForm() {
   const [step, setStep] = useState(0);
   const totalSteps = 4;
 
-  const [items, setItems] = useState([
-    {
-      description: "",
-      quantity: 0,
-      unity_value: 0,
-    },
-  ]);
   const [totalAmount, setTotalAmount] = useState(0);
 
   const handleRemoveItem = (index: number) => {
@@ -140,8 +158,12 @@ export function QuoteInvoiceForm() {
   return (
     <div className="p-8">
       {step === 0 && (
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h1 className="text-2xl font-bold">Client & Document</h1>
+          <p className="text-sm text-muted-foreground mb-8">
+            Set up the foundation of your document. Who is it for, and how
+            should it be structured?
+          </p>
           <Form {...form}>
             <form
               className="grid lg:grid-cols-2 gap-4 grid-cols-1"
@@ -150,9 +172,7 @@ export function QuoteInvoiceForm() {
               <Card>
                 <CardHeader>
                   <CardTitle>Client Details</CardTitle>
-                  <CardDescription>
-                    Who is this invoice/quote for?
-                  </CardDescription>
+                  <CardDescription>Who is this for?</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex gap-4">
@@ -240,9 +260,7 @@ export function QuoteInvoiceForm() {
               <Card>
                 <CardHeader>
                   <CardTitle>Document Setup</CardTitle>
-                  <CardDescription>
-                    Configure your document type and numbering.
-                  </CardDescription>
+                  <CardDescription>Configure your template.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex gap-4">
@@ -370,10 +388,10 @@ export function QuoteInvoiceForm() {
         </div>
       )}
       {step === 1 && (
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h1 className="text-2xl font-bold">Items/Service</h1>
-          <p className="text-sm text-muted-foreground">
-            Add the items or services you want to include in this invoice/quote.
+          <p className="text-sm text-muted-foreground mb-8">
+            What are you charging for?
           </p>
           <Button
             type="button"
@@ -469,10 +487,10 @@ export function QuoteInvoiceForm() {
                             form.watch("currency")
                           )}
                         </TableCell>
-                        <TableCell className="flex gap-2">
+                        <TableCell>
                           <Button
                             onClick={() => handleRemoveItem(index)}
-                            variant="secondary"
+                            variant="destructive"
                             size="icon"
                             type="button"
                           >
@@ -485,7 +503,7 @@ export function QuoteInvoiceForm() {
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={3}>Total</TableCell>
-                      <TableCell className="w-[200px]">
+                      <TableCell className="w-[200px] font-bold">
                         {formatCurrency(totalAmount, form.watch("currency"))}
                       </TableCell>
                       <TableCell />
@@ -512,12 +530,147 @@ export function QuoteInvoiceForm() {
         </div>
       )}
       {step === 2 && (
-        <div>
-          <h1>Terms and Payment</h1>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">Terms and Payment</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Finalize payment methods and set expectations.
+          </p>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form
+              className="grid lg:grid-cols-2 gap-4 grid-cols-1"
+              onSubmit={form.handleSubmit(onSubmit)}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Terms</CardTitle>
+                  <CardDescription>
+                    How should the client pay you?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="items"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Paymeny Methods</FormLabel>
+                        {payments.map((payment) => (
+                          <FormField
+                            key={payment.id}
+                            control={form.control}
+                            name="payment_methods"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={payment.id}
+                                  className="flex flex-row items-start space-x-2 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(
+                                        payment.id
+                                      )}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([
+                                              ...field.value,
+                                              payment.id,
+                                            ])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== payment.id
+                                              )
+                                            );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">
+                                    {payment.label}
+                                  </FormLabel>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    disabled={
+                      !form.watch("payment_methods").includes("bank_transfer")
+                    }
+                    control={form.control}
+                    name="bank_details"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank details</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Bank Name, Account Number, etc."
+                            className="resize-none"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter >
+                  <div className="flex gap-4 w-full">
+                    <FormField
+                      control={form.control}
+                      name="deposit"
+                      render={({ field }) => (
+                        <FormItem className="flex-1 flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Deposit required?</FormLabel>
+                            <FormDescription>
+                              Require a deposit before starting the project
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      disabled={!form.watch("deposit")}
+                      control={form.control}
+                      name="deposit_value"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Deposit Value</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="50%" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CardFooter>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Terms & Notes</CardTitle>
+                  <CardDescription>Add context or legal terms.</CardDescription>
+                </CardHeader>
+                <CardContent></CardContent>
+                <CardFooter></CardFooter>
+              </Card>
               <div className="col-span-full place-self-end gap-2 flex items-center">
-                <Button onClick={previousFormStep} type="button">
+                <Button
+                  variant="outline"
+                  onClick={previousFormStep}
+                  type="button"
+                >
                   <ChevronLeft />
                   Back
                 </Button>
@@ -536,7 +689,11 @@ export function QuoteInvoiceForm() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <div className="col-span-full place-self-end gap-2 flex items-center">
-                <Button onClick={previousFormStep} type="button">
+                <Button
+                  variant="outline"
+                  onClick={previousFormStep}
+                  type="button"
+                >
                   <ChevronLeft />
                   Back
                 </Button>
