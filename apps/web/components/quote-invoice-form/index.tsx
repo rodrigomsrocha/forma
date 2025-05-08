@@ -53,10 +53,40 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
+import { formatCurrency } from "@/utils/format-currnency";
+
+type FormValues = {
+  // Step 0 fields
+  name: string;
+  email: string;
+  address: string;
+  contact: string;
+  save_client: boolean;
+  doc_type: string;
+  doc_number: string;
+  issue_date: Date;
+  currency: string;
+
+  // Step 1 fields
+  items: {
+    description: string;
+    quantity: number;
+    unitValue: number;
+    total: number;
+  }[];
+};
 
 export function QuoteInvoiceForm() {
-  const form = useForm();
+  const form = useForm<FormValues>({
+    defaultValues: {
+      items: [{ description: "", quantity: 1, unitValue: 0, total: 0 }],
+    },
+  });
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items",
+  });
   const [step, setStep] = useState(0);
   const totalSteps = 4;
 
@@ -67,22 +97,27 @@ export function QuoteInvoiceForm() {
       unity_value: 0,
     },
   ]);
+  const [totalAmount, setTotalAmount] = useState(0);
 
-  const addItems = () => {
-    setItems((prev) => [
-      ...prev,
-      {
-        description: "",
-        quantity: 0,
-        unity_value: 0,
-      },
-    ]);
+  const handleRemoveItem = (index: number) => {
+    remove(index);
+    updateTotalAmount();
   };
 
-  const removeItems = (description: string) => {
-    setItems((prev) => {
-      return prev.filter((item) => item.description !== description);
-    });
+  const updateTotalAmount = () => {
+    const items = form.watch("items");
+    const sum = items.reduce((acc, item) => acc + (item.total || 0), 0);
+    setTotalAmount(sum);
+  };
+
+  const calculateTotal = (index: number) => {
+    const quantity =
+      parseFloat(String(form.watch(`items.${index}.quantity`))) || 0;
+    const unitValue =
+      parseFloat(String(form.watch(`items.${index}.unitValue`))) || 0;
+    const total = quantity * unitValue;
+    form.setValue(`items.${index}.total`, total);
+    updateTotalAmount();
   };
 
   const previousFormStep = () => {
@@ -91,9 +126,10 @@ export function QuoteInvoiceForm() {
     }
   };
 
-  const onSubmit = (values: unknown) => {
+  const onSubmit = (values: FormValues) => {
     if (step < totalSteps - 1) {
       setStep(step + 1);
+      console.log(values);
     } else {
       console.log(values);
       setStep(0);
@@ -315,7 +351,12 @@ export function QuoteInvoiceForm() {
                 </CardContent>
               </Card>
               <div className="col-span-full place-self-end gap-2 flex items-center mt-auto">
-                <Button onClick={previousFormStep} disabled type="button">
+                <Button
+                  variant="outline"
+                  onClick={previousFormStep}
+                  disabled
+                  type="button"
+                >
                   <ChevronLeft />
                   Back
                 </Button>
@@ -334,8 +375,19 @@ export function QuoteInvoiceForm() {
           <p className="text-sm text-muted-foreground">
             Add the items or services you want to include in this invoice/quote.
           </p>
-          <Button onClick={addItems} className="mb-4">
-            <Plus />
+          <Button
+            type="button"
+            onClick={() =>
+              append({
+                description: "",
+                quantity: 1,
+                unitValue: 0,
+                total: 0,
+              })
+            }
+            variant="outline"
+          >
+            <Plus className="mr-2 h-4 w-4" />
             Add Item
           </Button>
           <Form {...form}>
@@ -346,18 +398,18 @@ export function QuoteInvoiceForm() {
                     <TableRow>
                       <TableHead className="w-2/5">Description</TableHead>
                       <TableHead>Quantity</TableHead>
-                      <TableHead>Unity Value</TableHead>
+                      <TableHead>Unit Value</TableHead>
                       <TableHead className="w-[200px]">Total</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.description}>
+                    {fields.map((field, index) => (
+                      <TableRow key={field.id}>
                         <TableCell>
                           <FormField
                             control={form.control}
-                            name="description"
+                            name={`items.${index}.description`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
@@ -371,7 +423,7 @@ export function QuoteInvoiceForm() {
                         <TableCell>
                           <FormField
                             control={form.control}
-                            name="quantity"
+                            name={`items.${index}.quantity`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
@@ -379,6 +431,10 @@ export function QuoteInvoiceForm() {
                                     type="number"
                                     placeholder="0"
                                     {...field}
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      calculateTotal(index);
+                                    }}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -389,25 +445,36 @@ export function QuoteInvoiceForm() {
                         <TableCell>
                           <FormField
                             control={form.control}
-                            name="unity_value"
+                            name={`items.${index}.unitValue`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input placeholder="0.00" {...field} />
+                                  <Input
+                                    placeholder="0.00"
+                                    {...field}
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      calculateTotal(index);
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
                         </TableCell>
-                        <TableCell>R$ 1000,00</TableCell>
+                        <TableCell>
+                          {formatCurrency(
+                            form.watch(`items.${index}.total`),
+                            form.watch("currency")
+                          )}
+                        </TableCell>
                         <TableCell className="flex gap-2">
                           <Button
-                            onClick={() => {
-                              removeItems(item.description);
-                            }}
+                            onClick={() => handleRemoveItem(index)}
                             variant="secondary"
                             size="icon"
+                            type="button"
                           >
                             <Trash2 />
                           </Button>
@@ -418,20 +485,26 @@ export function QuoteInvoiceForm() {
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={3}>Total</TableCell>
-                      <TableCell className="w-[200px]">R$ 1000,00</TableCell>
+                      <TableCell className="w-[200px]">
+                        {formatCurrency(totalAmount, form.watch("currency"))}
+                      </TableCell>
                       <TableCell />
                     </TableRow>
                   </TableFooter>
                 </Table>
               </div>
-              <div className="col-span-full place-self-end gap-2 flex items-center">
-                <Button onClick={previousFormStep} type="button">
-                  <ChevronLeft />
+              <div className="flex gap-2 place-self-end items-center mt-auto">
+                <Button
+                  type="button"
+                  onClick={previousFormStep}
+                  variant="outline"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
                 <Button type="submit">
                   Next
-                  <ChevronRight />
+                  <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </form>
