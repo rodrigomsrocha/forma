@@ -3,6 +3,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { Calendar } from "@workspace/ui/components/calendar";
 import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Editor } from "@workspace/ui/components/editor";
 import {
   Table,
   TableHeader,
@@ -83,7 +84,9 @@ type FormValues = {
   deposit: boolean;
   deposit_value: number;
   bank_details: string;
-  payment_terms: string[];
+  internal_notes: string;
+  client_message: string;
+  payment_terms: string;
 };
 
 const payments = [
@@ -316,7 +319,7 @@ export function QuoteInvoiceForm() {
                                 variant={"outline"}
                                 className={cn(
                                   "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
+                                  !field.value && "text-muted-foreground",
                                 )}
                               >
                                 {field.value ? (
@@ -484,7 +487,7 @@ export function QuoteInvoiceForm() {
                         <TableCell>
                           {formatCurrency(
                             form.watch(`items.${index}.total`),
-                            form.watch("currency")
+                            form.watch("currency"),
                           )}
                         </TableCell>
                         <TableCell>
@@ -568,7 +571,7 @@ export function QuoteInvoiceForm() {
                                   <FormControl>
                                     <Checkbox
                                       checked={field.value?.includes(
-                                        payment.id
+                                        payment.id,
                                       )}
                                       onCheckedChange={(checked) => {
                                         return checked
@@ -578,8 +581,8 @@ export function QuoteInvoiceForm() {
                                             ])
                                           : field.onChange(
                                               field.value?.filter(
-                                                (value) => value !== payment.id
-                                              )
+                                                (value) => value !== payment.id,
+                                              ),
                                             );
                                       }}
                                     />
@@ -618,7 +621,7 @@ export function QuoteInvoiceForm() {
                     )}
                   />
                 </CardContent>
-                <CardFooter >
+                <CardFooter>
                   <div className="flex gap-4 w-full">
                     <FormField
                       control={form.control}
@@ -662,7 +665,60 @@ export function QuoteInvoiceForm() {
                   <CardTitle>Terms & Notes</CardTitle>
                   <CardDescription>Add context or legal terms.</CardDescription>
                 </CardHeader>
-                <CardContent></CardContent>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="internal_notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Private Notes</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Private notes (client won’t see this)"
+                            className="resize-none"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="client_message"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Client Message</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Thank you for your business! Payment is due in 14 days."
+                            className="resize-none"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="payment_terms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Terms</FormLabel>
+                        <FormDescription></FormDescription>
+                        <FormControl>
+                          <Editor
+                            content={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
                 <CardFooter></CardFooter>
               </Card>
               <div className="col-span-full place-self-end gap-2 flex items-center">
