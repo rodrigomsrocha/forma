@@ -1,18 +1,8 @@
 "use client";
 
+import { formatCurrency } from "@/utils/format-currnency";
 import { Button } from "@workspace/ui/components/button";
 import { Calendar } from "@workspace/ui/components/calendar";
-import { Checkbox } from "@workspace/ui/components/checkbox";
-import { Editor } from "@workspace/ui/components/editor";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-  TableFooter,
-} from "@workspace/ui/components/table";
 import {
   Card,
   CardContent,
@@ -21,6 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Editor } from "@workspace/ui/components/editor";
 import {
   Form,
   FormControl,
@@ -44,6 +36,16 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table";
+import { Textarea } from "@workspace/ui/components/textarea";
 import { cn } from "@workspace/ui/lib/utils";
 import { format } from "date-fns";
 import {
@@ -51,13 +53,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Save,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { formatCurrency } from "@/utils/format-currnency";
-import { Textarea } from "@workspace/ui/components/textarea";
 
 type FormValues = {
   // Step 0 fields
@@ -319,7 +318,7 @@ export function QuoteInvoiceForm() {
                                 variant={"outline"}
                                 className={cn(
                                   "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground",
+                                  !field.value && "text-muted-foreground"
                                 )}
                               >
                                 {field.value ? (
@@ -397,6 +396,7 @@ export function QuoteInvoiceForm() {
             What are you charging for?
           </p>
           <Button
+            className="start"
             type="button"
             onClick={() =>
               append({
@@ -487,7 +487,7 @@ export function QuoteInvoiceForm() {
                         <TableCell>
                           {formatCurrency(
                             form.watch(`items.${index}.total`),
-                            form.watch("currency"),
+                            form.watch("currency")
                           )}
                         </TableCell>
                         <TableCell>
@@ -571,9 +571,9 @@ export function QuoteInvoiceForm() {
                                   <FormControl>
                                     <Checkbox
                                       checked={field.value?.includes(
-                                        payment.id,
+                                        payment.id
                                       )}
-                                      onCheckedChange={(checked) => {
+                                      onCheckedChange={(checked: boolean) => {
                                         return checked
                                           ? field.onChange([
                                               ...field.value,
@@ -581,8 +581,8 @@ export function QuoteInvoiceForm() {
                                             ])
                                           : field.onChange(
                                               field.value?.filter(
-                                                (value) => value !== payment.id,
-                                              ),
+                                                (value) => value !== payment.id
+                                              )
                                             );
                                       }}
                                     />
@@ -740,8 +740,11 @@ export function QuoteInvoiceForm() {
         </div>
       )}
       {step === 3 && (
-        <div>
-          <h1>Finish</h1>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">Branding & Delivery</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Add your finishing touches and send the document.
+          </p>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <div className="col-span-full place-self-end gap-2 flex items-center">
